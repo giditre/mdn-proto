@@ -49,12 +49,12 @@ while getopts ":m:d:c:" o; do
       ;;
     d)
       data_net_base_address=$OPTARG
-      [[ ! ipvalid "$data_net_base_address" ]] && usage "invalid IP address $data_net_base_address ."
+      ! ipvalid "$data_net_base_address" && usage "invalid IP address $data_net_base_address ."
       data_net_base_address=$(cidr $data_net_base_address)
       ;;
     c)
       mdn_net_base_address=$OPTARG
-      [[ ! ipvalid "$mdn_net_base_address" ]] && usage "invalid IP address $mdn_net_base_address ."
+      ! ipvalid "$mdn_net_base_address" && usage "invalid IP address $mdn_net_base_address ."
       mdn_net_base_address=$(cidr $mdn_net_base_address)
       ;;    
     ?)
@@ -70,9 +70,11 @@ shift $((OPTIND-1))
 b=$(basename -- "$0")
 script_name=$(echo "${b%.*}")
 
-if ! grep $mdn_sw_name <<< $(ovs-vsctl list-br) >/dev/null 2>&1; then
-  echo "$mdn_sw_name is not an active Open vSwitch."
-  exit 1
+if [ -n $mdn_sw_name ]; then
+  if ! grep $mdn_sw_name <<< $(ovs-vsctl list-br) >/dev/null 2>&1; then
+    echo "$mdn_sw_name is not an active Open vSwitch."
+    exit 1
+  fi
 fi
 
 echo "Get list of hosts..."
@@ -94,7 +96,7 @@ for host_netns_name in $host_list; do
   host_name=$(echo $host_netns_name | tr "[:upper:]" "[:lower:]" | tr -d "-")
   host_number=$(echo $host_name | grep -o -E "[0-9]+")
 
-  if [ -n $mdn_sw_name ] ; then
+  if [ -n $mdn_sw_name ]; then
     host_iface_name=$(ip netns exec $host_netns_name ls /sys/class/net/ | grep -o -E "c\.sw[0-9]+-$host_name.1" | grep -v $mdn_sw_name)
   else
     host_iface_name=$(ip netns exec $host_netns_name ls /sys/class/net/ | grep -o -E "c\.sw[0-9]+-$host_name.1")
@@ -198,8 +200,10 @@ if [ -n $mdn_sw_name ]; then
   done
   rm /tmp/$0_ping.pidlist
   echo
+  echo
 
 fi
 
 echo "Done."
+echo
 
