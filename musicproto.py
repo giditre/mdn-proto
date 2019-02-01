@@ -90,6 +90,14 @@ def which_alphabet(alphabet_dict, sign_seq):
   # arriving here means no alphabet contained all signal in the sequence
   return None
 
+def compute_broadcast(addr, netmask):
+  # input must be an IPv4 address and a netmask as int number of bits
+  if not isinstance(addr, IPv4Address):
+    addr = IPv4Address(addr)
+  hostmask = 32 - netmask
+  net = IPv4Network(str(IPv4Address(int.from_bytes(addr.packed, byteorder='big')>>hostmask<<hostmask)) + '/' + str(netmask))
+  return str(net.broadcast_address)
+
 #def is_ipv4_address(addr):
 #  a = addr.split('.')
 #  if len(a) != 4:

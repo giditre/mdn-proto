@@ -42,11 +42,17 @@ conf.L3socket = L3RawSocket
 # define configuration of signals for player
 player_alphabet = SignalAlphabet()
 
+# open transmit socket
+tx_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+tx_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+print("Opened TX socket")
+
 # open receive socket
-rx_socket = socket.socket(socket.AF_INET, # Internet
-                          socket.SOCK_DGRAM) # UDP
-#rx_socket.settimeout(0.2)
-rx_socket.bind((play_ip, play_port))
+play_ip_broadcast = compute_broadcast(play_ip, 24)
+rx_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+rx_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+rx_socket.bind((play_ip_broadcast, play_port))
+print("Opened RX socket on {}".format(play_ip_broadcast))
 
 while True:
     data, addr = rx_socket.recvfrom(4096)
@@ -59,7 +65,7 @@ while True:
 # extract info from configuration packet and populate the alphabet
 player_alphabet.extend(m.sigSeq)
 
-print("RECEIVED ALPHABET: {}".format(player_alphabet))
+print("RECEIVED ALPHABET: {}\n".format(player_alphabet))
 
 # input('\nPress Enter to continue...\n')
 
@@ -83,7 +89,7 @@ try:
               appId = 1,
               sigSeq = player_alphabet.encode_binary(total_count)
       )
-      send(IP(dst=cond_ip)/UDP(sport=play_port,dport=cond_port)/m)
+      tx_socket.sendto(raw(m), (compute_broadcast(cond_ip, 24), cond_port))
       pck_count.clear()
       print()
 except KeyboardInterrupt:

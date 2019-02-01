@@ -25,10 +25,17 @@ play_port {}
 # scapy configuration to be able to send over loopback interface
 conf.L3socket = L3RawSocket
 
+# open transmit socket
+tx_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+tx_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+print("Opened TX socket")
+
 # open receive socket
-rx_socket = socket.socket(socket.AF_INET, # Internet
-                     socket.SOCK_DGRAM) # UDP
-rx_socket.bind((cond_ip, cond_port))
+cond_ip_broadcast = compute_broadcast(cond_ip, 24)
+rx_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+rx_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+rx_socket.bind((cond_ip_broadcast, cond_port))
+print("Opened RX socket on {}".format(cond_ip_broadcast))
 
 # create configuration of signals for players
 player_alphabet = {
@@ -51,14 +58,14 @@ m = MusicProtocol(
 
 m.show2()
 
-send(IP(dst=play_ip)/UDP(sport=cond_port,dport=play_port)/m)
+tx_socket.sendto(raw(m), (compute_broadcast(play_ip, 24), play_port))
 
 print("\nHint: check if player received alphabet...\n")
 
 # listen for messages coming from players
 
 while True:
-    data, addr = rx_socket.recvfrom(1024)
+    data, addr = rx_socket.recvfrom(4096)
     m = MusicProtocol(data)
     # TODO check if received packet is a well formed MP packet
     if True:
@@ -69,6 +76,6 @@ while True:
         # for s in m.sigSeq:
         #   print(s)
         # simple application: decode what player said "in binary"
-        print("Player0 said: {}\n".format(player_alphabet['p0'].decode_binary(m.sigSeq)))
-
+        player_name = which_alphabet(player_alphabet, m.sigSeq)
+        print("Player {} said: {}\n".format(player_name, player_alphabet[player_name].decode_binary(m.sigSeq)))
 

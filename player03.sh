@@ -10,5 +10,5 @@ iface_mac=$(cat /sys/class/net/$iface_name/address)
 
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-python3 $script_dir/player02.py $iface_name $iface_mac "$@"
+python3 $script_dir/player03.py $iface_name $iface_mac "$@"
 
