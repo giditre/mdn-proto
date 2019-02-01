@@ -82,34 +82,3 @@ for count in range(1, max_count):
 
     time.sleep(1)
 
-
-from musicproto import *
-from collections import Counter
-
-def icmp_monitor_callback(pck):
-  ip_pck = pck.payload
-  ip_tuple, err = extract_ip_tuple(ip_pck)
-  print(ip_tuple)
-  pck_count.update([ip_tuple])
-
-import argparse
-parser = argparse.ArgumentParser()
-parser.add_argument("capt_iface_name", help="name of the capture interface (required)")
-parser.add_argument("capt_iface_mac", help="MAC address of the capture interface (required)")
-args = parser.parse_args()
-
-capt_iface_name = args.capt_iface_name
-capt_iface_mac = args.capt_iface_mac
-print(capt_iface_name, capt_iface_mac)
-
-pck_count = PacketCounter()
-
-sniff(iface=capt_iface_name, filter="ether dst {} and icmp".format(capt_iface_mac), prn=icmp_monitor_callback, store=False, stop_filter = lambda x: False, timeout=None)
-print()
-
-print(pck_count)
-
-#for tup in pck_count.keys():
-#  print("Tuple {} observed {} time(s)".format(tup, pck_count[tup]))
-
-# TODO also get additional filter from optional arguments

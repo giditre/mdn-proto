@@ -1,6 +1,6 @@
 from scapy.all import *
-
 from collections import Counter
+from ipaddress import IPv4Address, IPv4Network
 
 class Signal(Packet):
     name = "SignalPacket"
@@ -64,28 +64,49 @@ class SignalAlphabet(SignalSequence):
     return signal_sequence
 
   def decode_binary(self, signal_sequence):
-    if not isinstance(signal_sequence, SignalSequence):
-      if isinstance(signal_sequence, list):
-        signal_sequence = SignalSequence(signal_sequence)
-      else:
-        raise TypeError("impossible to decode object of type {}".format(type(signal_sequence)))
+    # if not isinstance(signal_sequence, SignalSequence):
+    #   if isinstance(signal_sequence, list):
+    #     signal_sequence = SignalSequence(signal_sequence)
+    #   else:
+    #     raise TypeError("impossible to decode object of type {}".format(type(signal_sequence)))
     if not all(s in self for s in signal_sequence):
-      raise ValueError("signal sequence contains signals not belonging to this alphabet.")
+      debug_msg = "The rx sequence: {}\n".format(signal_sequence)
+      debug_msg += "The alphabet: {}\n".format(self)
+      for s in signal_sequence:
+        debug_msg += "signal {} {} in the alphabet\n".format(s, "is" if s in self else "is NOT")
+      raise ValueError(debug_msg + "signal sequence contains signals not belonging to this alphabet.")
     n = 0
     for s in signal_sequence:
       n += 2**self.index(s)
     return n    
 
+def which_alphabet(alphabet_dict, sign_seq):
+  # input must be a dictionary of alphabets in the form {'alph_name': SignalAlphabet}
+  if not isinstance(alphabet_dict, dict):
+    raise TypeError
+  for alph_name, sign_alph in alphabet_dict.items():
+      if all(s in sign_alph for s in sign_seq):
+        return alph_name
+  # arriving here means no alphabet contained all signal in the sequence
+  return None
+
+#def is_ipv4_address(addr):
+#  a = addr.split('.')
+#  if len(a) != 4:
+#      return False
+#  for x in a:
+#      if not x.isdigit():
+#          return False
+#      i = int(x)
+#      if i < 0 or i > 255:
+#          return False
+#  return True
+
 def is_ipv4_address(addr):
-  a = addr.split('.')
-  if len(a) != 4:
-      return False
-  for x in a:
-      if not x.isdigit():
-          return False
-      i = int(x)
-      if i < 0 or i > 255:
-          return False
+  try:
+    a = IPv4Address(addr)
+  except ValueError:
+    return False
   return True
 
 def extract_ip_tuple(packet):

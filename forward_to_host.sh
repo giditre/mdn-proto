@@ -13,7 +13,7 @@ sw_list=$1
 # sw_list=$(ovs-vsctl show | grep -o -E "sw[0-9]+" | sort | uniq)
 
 for sw_name in $sw_list; do
-  line=$(ovs-ofctl -O OpenFlow13 dump-ports-desc $sw_name | grep -o -E "[0-9]+\(c\.(sw|host)[0-9]+-(sw|host)[0-9]+\.[0-9]+\)" | grep -E "host.*\.1")
+  line=$(ovs-ofctl -O OpenFlow13 dump-ports-desc $sw_name | grep -o -E "[0-9]+\(c\.($sw_name|host[0-9]+)-($sw_name|host[0-9]+)\.[0-9]+\)" | grep -E "host.*\.1")
   host_name=$(echo $line | grep -o -E "host[0-9]+")
   host_number=$(echo $host_name | grep -o -E "[0-9]+")
   host_netns_name="Host-$host_number"

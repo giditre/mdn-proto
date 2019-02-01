@@ -3,8 +3,8 @@
 if [[ $(id -u) -ne 0 ]] ; then echo "Please run as root" ; exit 1 ; fi
 
 # default values
-def_data_net_base_address="192.168.27.0/24"
-def_mdn_net_base_address="172.27.27.0/24"
+def_data_net_base_address="192.168.27.100/24"
+def_mdn_net_base_address="172.27.27.100/24"
 
 usage() { 
   if [ "$#" -ne 0 ]; then echo "Error: $@"; fi
@@ -39,6 +39,16 @@ cidr() {
   local a=$1
   [[ ! $a == */* ]] && a="$a/24"
   echo $a
+}
+
+add_host_id() {
+  local a=$1
+  local h=$2
+  local prefix=${a%*.*}
+  local suffix=$(local tmp=${a##*.}; echo ${tmp%%/*})
+  local mask=$( [[ $a == */* ]] && echo ${a##*/} )
+
+  echo "$prefix.$(($suffix + $h))/$mask"
 }
 
 while getopts ":m:d:c:" o; do
@@ -115,7 +125,7 @@ for host_netns_name in $host_list; do
   echo "Disable IPv6..."
   ip netns exec $host_netns_name sysctl -w net.ipv6.conf.all.disable_ipv6=1
   # assign IPv4 address to interface
-  address="192.168.27.$((100+$host_number))/24"
+  address="$(add_host_id $data_net_base_address $host_number)"
   echo "Assign IPv4 address $address to interface $host_iface_name..."
   echo "$host_netns_name,$(echo $address | cut -d'/' -f1)" >> $addr_file_name
   ip netns exec $host_netns_name ip addr add $address dev $host_iface_name
@@ -132,7 +142,10 @@ for host_netns_name in $host_list; do
     continue
   fi
   cat $addr_file_name | grep -v "$host_netns_name" | cut -d, -f2 | while read other_host_address; do
-    while ! ip netns exec $host_netns_name ping -c1 -w3 $other_host_address >/dev/null 2>&1; do continue; done
+    while ! ip netns exec $host_netns_name ping -c1 -w1 $other_host_address >/dev/null 2>&1; do
+      # echo "$host_netns_name awaits response from $other_host_address"
+      continue
+    done
   done
 done & echo $! >> /tmp/$0_ping.pidlist
 
@@ -172,7 +185,7 @@ if [ -n $mdn_sw_name ]; then
     echo "Disable IPv6..."
     ip netns exec $host_netns_name sysctl -w net.ipv6.conf.all.disable_ipv6=1
     # assign IPv4 address to interface
-    address="172.27.27.$((100+$host_number))/24"
+    address="$(add_host_id $mdn_net_base_address $host_number)"
     echo "Assign IPv4 address $address to interface $host_iface_name..."
     echo "$host_netns_name,$(echo $address | cut -d'/' -f1)" >> $addr_file_name
     ip netns exec $host_netns_name ip addr add $address dev $host_iface_name
