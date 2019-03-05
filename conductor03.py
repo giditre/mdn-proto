@@ -37,6 +37,8 @@ rx_socket.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 rx_socket.bind((cond_ip_broadcast, cond_port))
 print("Opened RX socket on {}".format(cond_ip_broadcast))
 
+print()
+
 # create configuration of signals for players
 player_alphabet = {
   'p0': SignalAlphabet(Signal(signal=440, sigLen=100),

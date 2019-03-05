@@ -1,6 +1,13 @@
 from scapy.all import *
 from collections import Counter
 from ipaddress import IPv4Address, IPv4Network
+import socket
+from sys import stderr
+from threading import Lock
+
+def print_err(*args, **kwargs):
+  kwargs['file'] = stderr
+  print(*args, **kwargs)
 
 class Signal(Packet):
     name = "SignalPacket"
@@ -15,17 +22,30 @@ class Signal(Packet):
     def __str__(self):
       return ', '.join(["{}={}".format(fname, fvalue) for fname, fvalue in self.__class__(raw(self)).fields.items()])
 
+phys = {
+  0:"UNSPECIFIED",
+  0xAA:"AUDIO",
+  1:"WIFI",
+  2:"BLUETOOTH",
+  3:"WIRED"
+}
+
+applications = {
+  0:"UNSPECIFIED",
+  1:"HHD",
+  2:"TS"
+}
+
 class MusicProtocol(Packet):
     name = "MusicProtocolPacket"
     fields_desc = [
-            ByteEnumField("phy", 0, {0:"UNSPECIFIED", 0xAA:"AUDIO", 1:"WIFI",
-                                    2:"BLUETOOTH", 3:"WIRED"}),
+            ByteEnumField("phy", 0, phys),
             XByteField("version", 0),
             ShortField("len", None),
             ByteField("channel", 0),
             ShortField("members", 1),
             ShortField("tsDur", 1000),
-            ByteEnumField("appId", 0, {0:"UNSPECIFIED", 1:"HHD", 2:"PS"}),
+            ByteEnumField("appId", 0, applications),
             FieldLenField("sigSeqLen", None, count_of='sigSeq'),
             PacketListField('sigSeq', None, Signal, count_from=lambda pkt:pkt.sigSeqLen)
     ]
@@ -36,6 +56,43 @@ class MusicProtocol(Packet):
             p = p[:2] + struct.pack("!H", len(p)) + p[4:]
         return p
 
+def load_app_signals(fname):
+  signals = []
+  with open(fname) as f:
+    for line in f:
+      line = line.strip('\n').strip()
+
+      splitted_line = line.split(':')
+      app_info = splitted_line[0]
+      app_signals = splitted_line[1]
+
+      splitted_app_info = app_info.split('/')
+      app_id = splitted_app_info[0]
+      app_name = splitted_app_info[1]
+      app_descr = splitted_app_info[2]
+
+      splitted_app_signals = app_signals.split(',')
+
+      for s in splitted_app_signals:
+        signals.append({
+          "app_id": int(app_id),
+          "app_name": app_name,
+          "app_descr": app_descr,
+          "signal": s
+        })
+  return signals
+
+def get_signal_index(signals, app_name, signal_name):
+  i = None
+  for s in signals:
+    if s['app_name'] == app_name and s['signal'] == signal_name:
+      i = signals.index(s)
+      break
+  if i is not None:
+    return i
+  else:
+    raise KeyError('Signal {} of app {} not found.'.format(signal_name, app_name))
+
 class SignalSequence(list):
   def __init__(self, *args):
     super().__init__()
@@ -45,6 +102,14 @@ class SignalSequence(list):
     if not self:
       return super().__str__()
     return '; '.join(["{}".format(s) for s in self])
+
+  def loads(self, line):
+    # supposes line is formd like this:
+    # signal,sigLen;signal,sigLen[; [...]]
+    for s in line.split(';'):
+      signal = int(s.split(',')[0])
+      sigLen = int(s.split(',')[1])
+      self.append(Signal(signal=signal, sigLen=sigLen))
 
 class SignalAlphabet(SignalSequence):
 
@@ -89,6 +154,33 @@ def which_alphabet(alphabet_dict, sign_seq):
         return alph_name
   # arriving here means no alphabet contained all signal in the sequence
   return None
+
+def load_alphabets(fname):
+  alphabets = {}
+  with open(fname) as f:
+    for n, line in enumerate(f):
+      if ':' in line:
+        splitted_line = line.split(':')
+        alph_name = splitted_line[0]
+        alph_content = splitted_line[1]
+      else:
+        alph_name = 'a{}'.format(n)
+        alph_content = line
+      alph = SignalAlphabet()
+      alph.loads(alph_content)
+      alphabets[alph_name] = alph
+  return alphabets
+
+def write_alphabets(fname, alphabets):
+  with open(fname, 'w') as f:
+    for p in alphabets:
+      f.write('{}:'.format(p))
+      for i, s in enumerate(alphabets[p]):
+        f.write('{},{}'.format(s.signal, s.sigLen))
+        if i != len(alphabets[p])-1:
+          f.write(';')
+        else:
+          f.write('\n')
 
 def compute_broadcast(addr, netmask):
   # input must be an IPv4 address and a netmask as int number of bits
@@ -152,20 +244,24 @@ def is_ip_tuple(tup):
 
 class PacketCounter(Counter):
   def update(self, iterable=None, **kwds):
-    # before updating the Counter, check if iterable is a list of valid IP tuples
-    if iterable is not None:
-      if isinstance(iterable, tuple):
-        iterable=[iterable]
-      for elem in iterable:
-        if not is_ip_tuple(elem):
-          raise ValueError("{} not recognized as valid IPv4 tuple.".format(elem))
+    # # before updating the Counter, check if iterable is a list of valid IP tuples
+    # if iterable is not None:
+    #   if isinstance(iterable, tuple):
+    #     iterable=[iterable]
+    #   for elem in iterable:
+    #     if not is_ip_tuple(elem):
+    #       raise ValueError("{} not recognized as valid IPv4 tuple.".format(elem))
     super().update(iterable, **kwds)
 
   def __repr__(self):
     if not self:
       return super().__repr__()
     return '\n'.join(map('Tuple %r observed %r time(s)'.__mod__, self.most_common()))
-      
+
+class BroadcastUDPSocket(socket.socket):
+  def __init__(self, *args, **kwargs):
+    super().__init__(socket.AF_INET, socket.SOCK_DGRAM, *args, **kwargs)
+    self.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
 if __name__ == "__main__":
 
