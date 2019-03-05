@@ -10,7 +10,7 @@ logger = logging.getLogger(os.path.basename(__file__))
 logger.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('[ %(levelname)s ] %(message)s')
+formatter = logging.Formatter('[ %(asctime)s ][ %(levelname)s ] %(message)s')
 ch.setFormatter(formatter)
 logger.addHandler(ch)
 
@@ -115,7 +115,6 @@ def send_alphabet(alphabets, player_name, player_locator, lease_len):
 
 for p in players:
   send_alphabet(player_alphabets, p, players[p]['locator'], lease_length)
-  time.sleep(0.5)
 
 # listen for messages coming from players
 logger.info('Start listening to players...')
