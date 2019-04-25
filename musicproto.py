@@ -27,7 +27,8 @@ phys = {
   0xAA:"AUDIO",
   1:"WIFI",
   2:"BLUETOOTH",
-  3:"WIRED"
+  3:"WIRED",
+  4:"VIBRATION"
 }
 
 applications = {
@@ -39,15 +40,15 @@ applications = {
 class MusicProtocol(Packet):
     name = "MusicProtocolPacket"
     fields_desc = [
-            ByteEnumField("phy", 0, phys),
-            XByteField("version", 0),
-            ShortField("len", None),
-            ByteField("channel", 0),
-            ShortField("members", 1),
-            ShortField("tsDur", 1000),
-            ByteEnumField("appId", 0, applications),
-            FieldLenField("sigSeqLen", None, count_of='sigSeq'),
-            PacketListField('sigSeq', None, Signal, count_from=lambda pkt:pkt.sigSeqLen)
+        ByteEnumField("phy", 0, phys),
+        XByteField("version", 0),
+        ShortField("len", None),
+        ByteField("channel", 0),
+        ShortField("members", 1),
+        ShortField("tsDur", 1000),
+        ByteEnumField("appId", 0, applications),
+        FieldLenField("sigSeqLen", None, count_of='sigSeq'),
+        PacketListField('sigSeq', None, Signal, count_from=lambda pkt:pkt.sigSeqLen)
     ]
 
     def post_build(self, p, pay):
@@ -104,7 +105,7 @@ class SignalSequence(list):
     return '; '.join(["{}".format(s) for s in self])
 
   def loads(self, line):
-    # supposes line is formd like this:
+    # supposes line is formed like this:
     # signal,sigLen;signal,sigLen[; [...]]
     for s in line.split(';'):
       signal = int(s.split(',')[0])
@@ -258,10 +259,49 @@ class PacketCounter(Counter):
       return super().__repr__()
     return '\n'.join(map('Tuple %r observed %r time(s)'.__mod__, self.most_common()))
 
+
 class BroadcastUDPSocket(socket.socket):
   def __init__(self, *args, **kwargs):
     super().__init__(socket.AF_INET, socket.SOCK_DGRAM, *args, **kwargs)
     self.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+
+class MusicProtocolSignalHandler():
+  def __init__(self, phy, tx_socket=None, rx_socket=None):
+    self.phy = phy
+    if self.phy == "WIRED":
+      self.tx_socket = tx_socket
+      self.rx_socket = rx_socket
+
+  def send(signal_sequence, dst=None):
+    # signal_sequence is a list of Signal objects or a SignalSequence object
+    # dst (optional) is an identifier of the destination of the signal.
+    ### if phy == WIRED, it is a pair (tuple) of IP address and port
+    if self.phy == "WIRED":
+      m = MusicProtocol(sigSeq=signal_sequence)
+      tx_socket.sendto(raw(m), dst)
+    elif self.phy == "AUDIO":
+      # TODO
+      pass
+    elif self.phy == "VIBRATION":
+      # TODO
+      pass
+    else:
+      raise Exception("send: unhandled phy {}".format(self.phy))
+
+  def receive():
+    if self.phy == "WIRED":
+      self.rx_socket.recvfrom(4096)
+    elif self.phy == "AUDIO":
+      # TODO
+      pass
+    elif self.phy == "VIBRATION":
+      # TODO
+      pass
+    else:
+      raise Exception("send: unhandled phy {}".format(self.phy))
+
+
 
 if __name__ == "__main__":
 
@@ -285,3 +325,6 @@ if __name__ == "__main__":
     ]
 
     m.show2()
+
+
+

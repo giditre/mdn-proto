@@ -1,2 +1,4 @@
-1/HHD/heavy-hitter detection:SIREN
+1/HHD/heavy-hitter detection:ALARM
 2/TS/tracesound:ECHO
+3/DM/DDoS monitoring:ALARM
+4/ST/SNMP trap:coldStart,warmStart,linkDown,linkUp,authFailure,egpNeighborLoss
