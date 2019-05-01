@@ -5,6 +5,10 @@ import socket
 from sys import stderr
 from threading import Lock
 
+import mpsoundlib
+import mpvirtlib
+
+
 def print_err(*args, **kwargs):
   kwargs['file'] = stderr
   print(*args, **kwargs)
@@ -267,41 +271,71 @@ class BroadcastUDPSocket(socket.socket):
 
 
 class MusicProtocolSignalHandler():
-  def __init__(self, phy, tx_socket=None, rx_socket=None):
+  def __init__(self, phy, tx_socket=None, rx_socket=None, virtual=False):
     self.phy = phy
+
     if self.phy == "WIRED":
       self.tx_socket = tx_socket
       self.rx_socket = rx_socket
+      self.virtual = virtual
+      if self.virtual:
+        self.virtual_sound_recorder = mpvirtlib.VirtualSoundRecorder()
+        self.virtual_sound_recorder.start()
 
-  def send(signal_sequence, dst=None):
+    elif self.phy == "AUDIO":
+      self.sound_handler = mpsoundlib.SoundHandler(0, 2)
+
+    elif self.phy == "VIBRATION":
+      # TODO
+      pass
+
+    else:
+      raise Exception("init: unhandled phy {}".format(self.phy))
+
+  def send(self, signal_sequence, dst=None):
     # signal_sequence is a list of Signal objects or a SignalSequence object
     # dst (optional) is an identifier of the destination of the signal.
     ### if phy == WIRED, it is a pair (tuple) of IP address and port
     if self.phy == "WIRED":
       m = MusicProtocol(sigSeq=signal_sequence)
-      tx_socket.sendto(raw(m), dst)
+      self.tx_socket.sendto(raw(m), dst)
     elif self.phy == "AUDIO":
-      # TODO
-      pass
+      for s in signal_sequence:
+        freq = s.signal
+        duration = s.duration
+        self.sound_handler.send(freq, duration)
     elif self.phy == "VIBRATION":
       # TODO
       pass
+      
     else:
       raise Exception("send: unhandled phy {}".format(self.phy))
 
-  def receive():
+  def receive(self):
     if self.phy == "WIRED":
-      self.rx_socket.recvfrom(4096)
+      data, addr = self.rx_socket.recvfrom(4096)
+      m = MusicProtocol(data)
+      ## TODO check if received packet is a well formed MP packet
+      if self.virtual:
+        for s in m.sigSeq:
+          self.virtual_sound_recorder.record(s.signal, s.sigLen)
+      return m.sigSeq
     elif self.phy == "AUDIO":
-      # TODO
-      pass
+      # TODO make duration sensible
+      duration = 5 
+      sensed_freqs = self.sound_handler.receive(duration)
+      return [Signal(signal=f, duration=duration) for f in sensed_freqs]
     elif self.phy == "VIBRATION":
       # TODO
       pass
     else:
-      raise Exception("send: unhandled phy {}".format(self.phy))
+      raise Exception("receive: unhandled phy {}".format(self.phy))
 
-
+  def quit(self):
+    if self.phy == "WIRED" and self.virtual:
+      return self.virtual_sound_recorder.stop()
+    else:
+      return None
 
 if __name__ == "__main__":
 
