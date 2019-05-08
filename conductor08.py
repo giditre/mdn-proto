@@ -85,7 +85,7 @@ logger.debug(players)
 # TODO: get base frequency, gap and duration from file
 base_freq = 440
 gap = 20
-duration = 100
+duration = 1000
 alphabet_length = len(app_signals)
 player_alphabets = {}
 next_freq = base_freq
@@ -139,7 +139,7 @@ except KeyboardInterrupt:
     exit_msg = signal_handler.quit()
     if exit_msg is not None:
       print(exit_msg)
-      samples = mpvirtlib.generate_samples(48000, exit_msg[0], exit_msg[1], exit_msg[2]) 
-      mpvirtlib.write_wav('virtualsound.wav', samples)
+      samples = mpvirtlib.generate_samples(exit_msg[0], exit_msg[1], 48000) 
+      mpvirtlib.write_wav('virtualsound.wav', samples, 48000)
   pass
 

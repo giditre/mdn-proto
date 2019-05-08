@@ -129,11 +129,6 @@ def monitor_callback(pck):
       return
     logger.debug('Received ICMP ECHO REQUEST packet')
     signal_index = get_signal_index(app_signals, 'TS', 'ECHO')
-    ## build packet to send to conductor
-    #m = base_m
-    #m.appId = app_signals[signal_index]['app_id']
-    #m.sigSeq = player_alphabet[signal_index]
-    #tx_socket.sendto(raw(m), (compute_broadcast(cond_ip, 24), cond_port))
     signal_handler.send(player_alphabet[signal_index], (compute_broadcast(cond_ip, 24), cond_port))
   elif ip_tuple[2] == 6 or ip_tuple[2] == 17:
     # TCP or UDP
@@ -143,23 +138,14 @@ def monitor_callback(pck):
     logger.debug(hhd_count)
     if sum(hhd_count.values()) >= 100:
       signal_index = get_signal_index(app_signals, 'HHD', 'ALARM')
-      ## build packet to send to conductor
-      #m = base_m
-      #m.appId = app_signals[signal_index]['app_id']
-      #m.sigSeq = player_alphabet[signal_index]
-      #tx_socket.sendto(raw(m), (compute_broadcast(cond_ip, 24), cond_port))
       signal_handler.send(player_alphabet[signal_index], (compute_broadcast(cond_ip, 24), cond_port))
       hhd_count.clear()
   # DDoS monitoring
-  dm_count.update(ip_tuple)
+  dm_count.update([ip_tuple])
   # TODO: get number from elsewhere
   if len(dm_count) > 3:
+    logger.debug(dm_count)
     signal_index = get_signal_index(app_signals, 'DM', 'ALARM')
-    ## build packet to send to conductor
-    #m = base_m
-    #m.appId = app_signals[signal_index]['app_id']
-    #m.sigSeq = player_alphabet[signal_index]
-    #tx_socket.sendto(raw(m), (compute_broadcast(cond_ip, 24), cond_port))
     signal_handler.send(player_alphabet[signal_index], (compute_broadcast(cond_ip, 24), cond_port))
     dm_count.clear()
 

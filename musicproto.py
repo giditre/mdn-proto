@@ -49,7 +49,7 @@ class MusicProtocol(Packet):
         ShortField("len", None),
         ByteField("channel", 0),
         ShortField("members", 1),
-        ShortField("tsDur", 1000),
+        ShortField("tsDur", 5000),
         ByteEnumField("appId", 0, applications),
         FieldLenField("sigSeqLen", None, count_of='sigSeq'),
         PacketListField('sigSeq', None, Signal, count_from=lambda pkt:pkt.sigSeqLen)
