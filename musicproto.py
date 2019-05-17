@@ -13,6 +13,15 @@ def print_err(*args, **kwargs):
   kwargs['file'] = stderr
   print(*args, **kwargs)
 
+class MPSetupError(Exception):
+  """Raised if problems in the setup phase"""
+  pass
+
+class MPReceiveTimeoutError(Exception):
+  """Raised when the receive function incurs in the timeout"""
+  pass
+
+
 class Signal(Packet):
     name = "SignalPacket"
     fields_desc = [
@@ -26,9 +35,22 @@ class Signal(Packet):
     def __str__(self):
       return ', '.join(["{}={}".format(fname, fvalue) for fname, fvalue in self.__class__(raw(self)).fields.items()])
 
+# 8 bit field
+types = {
+  10: "Setup Player Hello",
+  11: "Setup Conductor Hello",
+  12: "Setup Player Channel Suggestion",
+  13: "Setup Conductor Signal Assignment",
+  20: "MAC Policy Change from Conductor",
+  21: "MAC Policy Change ACK from Player",
+  30: "Close from Conductor",
+  31: "Close ACK from Player"
+}
+
+# 4 bit field
 phys = {
   0:"UNSPECIFIED",
-  0xAA:"AUDIO",
+  0xA:"AUDIO",
   1:"WIFI",
   2:"BLUETOOTH",
   3:"WIRED",
@@ -40,6 +62,80 @@ applications = {
   1:"HHD",
   2:"TS"
 }
+
+
+class MPSetupPlayerHello(Packet):
+  name = "MPSetupPlayerHelloPacket"
+  fields_desc = [
+    ByteField("version", 0),
+    ByteEnumField("type", 10, types),
+    FieldLenField("len", None, count_of="phy"),
+    FieldListField("phy", 0, ByteEnumField("phy", 0, phys), count_from=lambda pkt:pkt.len)
+  ]
+
+  def post_build(self, p, pay):
+    p += pay
+    if self.len is None:
+        p = p[:2] + struct.pack("!H", len(p)) + p[4:]
+    return p
+    
+
+class MPSetupConductorHello(Packet):
+  name = "MPSetupConductorHelloPacket"
+  fields_desc = [
+    ByteField("version", 0),
+    ByteEnumField("type", 11, types),
+    ByteEnumField("phy", 0, phys)
+  ]
+
+
+class MPSetupPlayerChannel(Packet):
+  name = "MPSetupPlayerChannelPacket"
+  fields_desc = [
+    ByteField("version", 0),
+    ByteEnumField("type", 12, types),
+    ByteEnumField("phy", 0, phys),
+    ByteField("channel", 0) 
+  ]
+
+
+class MPSetupConductorSignals(Packet):
+  name = "MPSetupConductorSignalsPacket"
+  fields_desc = [
+    ByteField("version", 0),
+    ByteEnumField("type", 13, types),
+    ShortField("len", None),
+    ByteEnumField("phy", 0, phys),
+    ByteField("channel", 0),
+    FieldLenField("sigSeqLen", None, count_of='sigSeq'),
+    PacketListField('sigSeq', None, Signal, count_from=lambda pkt:pkt.sigSeqLen)
+  ]
+
+  def post_build(self, p, pay):
+    p += pay
+    if self.len is None:
+        p = p[:2] + struct.pack("!H", len(p)) + p[4:]
+    return p
+
+
+class MPCloseConductor(Packet):
+  name = "MPCloseConductor"
+  fields_desc = [
+    ByteField("version", 0),
+    ByteEnumField("type", 30, types),
+    ByteEnumField("phy", 0, phys),
+    ByteField("channel", 0)
+  ]
+
+
+class MPClosePlayer(Packet):
+  name = "MPClosePlayer"
+  fields_desc = [
+    ByteField("version", 0),
+    ByteEnumField("type", 31, types)
+  ]
+
+
 
 class MusicProtocol(Packet):
     name = "MusicProtocolPacket"
@@ -58,6 +154,7 @@ class MusicProtocol(Packet):
     def post_build(self, p, pay):
         p += pay
         if self.len is None:
+            # basically we are inserting the length by overwriting the relevant bytes n the packet with the hex version of the length of the packet
             p = p[:2] + struct.pack("!H", len(p)) + p[4:]
         return p
 
