@@ -64,22 +64,30 @@ signal_handler = MusicProtocolSignalHandler("WIRED", tx_socket=tx_socket, rx_soc
 
 ### setup phase ("handshake")
 # send player hello specifying version and supported phys
-player_hello_packet = MPSetupPlayerHello(version=1, FieldListField=[0x3])
-tx_socket.sendto(raw(player_hello_packet), (cond_ip, cond_port))
+player_hello_packet = MPSetupPlayerHello(version=1, phy=[0x3])
+tx_socket.sendto(raw(player_hello_packet), (compute_broadcast(cond_ip, 24), cond_port))
+logger.debug("Sent PlayerHello")
 # wait for reception of conductor hello
-data, addr = self.rx_socket.recvfrom(4096)
+data, addr = rx_socket.recvfrom(4096)
 conductor_hello_packet = MPSetupConductorHello(data)
+logger.debug("Received ConductorHello")
 # TODO check that type of packet received is correct, that phy is supported, and store session_id and phy
 phy = conductor_hello_packet.phy
 session_id = conductor_hello_packet.session
 # send player channel suggestion
 player_channel_packet = MPSetupPlayerChannel(version=1, session=session_id, phy=phy, channel=1)
-tx_socket.sendto(raw(player_channel_packet), (cond_ip, cond_port))
+tx_socket.sendto(raw(player_channel_packet), (compute_broadcast(cond_ip, 24), cond_port))
+logger.debug("Sent PlayerChannel")
 # wait for reception of signals from conductor
-data, addr = self.rx_socket.recvfrom(4096)
+data, addr = rx_socket.recvfrom(4096)
 conductor_signals_packet = MPSetupConductorSignals(data)
+logger.debug("Received ConductorSignals")
 # TODO check that receive packet has correct type, sigSeq is not empty
 player_alphabet = conductor_signals_packet.sigSeq
+# send ACK for signals
+player_signals_ack_packet = MPSetupPlayerSignalsACK(version=1, session=session_id)
+tx_socket.sendto(raw(player_signals_ack_packet), (compute_broadcast(cond_ip, 24), cond_port))
+logger.debug("Sent ACKSIG")
 ### end setup phase
 
 

@@ -6,6 +6,8 @@ from threading import Timer, Lock
 import logging
 import os
 
+import random
+
 logger = logging.getLogger(os.path.basename(__file__))
 logger.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
@@ -68,7 +70,7 @@ logger.debug('Signals {}'.format(app_signals))
 
 # create configuration of signals (i.e. alphabets) for a player
 # TODO: get base frequency, gap and duration from file
-def create_alphabet(base_freq=100, gap=20, duration=1000, alphabet_length=len(app_signals):
+def create_alphabet(base_freq=100, gap=20, duration=1000, alphabet_length=len(app_signals)):
   alphabet = []
   next_freq = base_freq
   for a in range(alphabet_length):
@@ -78,15 +80,55 @@ def create_alphabet(base_freq=100, gap=20, duration=1000, alphabet_length=len(ap
   return alphabet, next_freq
 
 
-players = {}
+### setup phase
 
-# TODO setup phase
 # wait for at least one player to contact the conductor
 # when that happens, go through the 4 steps of setup
 # remembering to create (random) and keep track of session_id
 # and generating an alphabet for every player using the function create_alphabet
 # in a first moment, implement this for only 1 player (1 setup phase then listen for signals without expecting any other player to connect) then extend it to more players (thread in the background ready to go through setup phase for new players, while the main thread keeps listening to signals from registered players)
 # create a dictionary as a means to store all session_ids of every player, associating them with their IP address
+
+# players = {<session_id>: <address>}
+players = {}
+player_alphabets = {}
+
+# wait for player to contact the conductor with player hello
+logger.debug("Wait for PlayerHello")
+data, addr = rx_socket.recvfrom(4096)
+player_hello_packet = MPSetupPlayerHello(data)
+logger.debug("Received PlayerHello from {}".format(addr))
+# TODO: retrieve list of phys supported by player and choose one
+# for the moment just impose the default one - 0x3 WIRED
+phy = 0x3
+# generate session_id as a random integer between 0 and 255, avoiding existing values
+session_id = random.choice([n for n in range(256) if n not in players])
+players[session_id] = addr[0]
+# generate and send conductor hello packet
+conductor_hello_packet = MPSetupConductorHello(version=1, session=session_id, phy=phy)
+tx_socket.sendto(raw(conductor_hello_packet), (players[session_id], play_port))
+logger.debug("Sent ConductorHello")
+# wait for reception of player channel suggestion
+# logger.debug("Wait for PlayerChannel")
+data, addr = rx_socket.recvfrom(4096)
+player_channel_packet = MPSetupPlayerChannel(data)
+logger.debug("Received PlayerChannel")
+# TODO: retrieve suggested channel from player
+# for the moment just impose the channel - 3 (no particular meaning)
+channel = 3
+# create alphabet for player
+# TODO: extend for creation of multiple alphabets, feeding the function meaningful values and keeping track of next_freq for creation of following alphabet
+alphabet, next_freq = create_alphabet()
+logger.debug("Created alphabet {} for session {}".format(alphabet, session_id))
+player_alphabets[session_id] = alphabet
+conductor_signals_packet = MPSetupConductorSignals(version=1, session=session_id, phy=phy, channel=channel, sigSeq=alphabet)
+tx_socket.sendto(raw(conductor_signals_packet), (players[session_id], play_port))
+logger.debug("Sent Signals")
+# wait for reception of ACK from player
+data, addr = rx_socket.recvfrom(4096)
+# TODO: check that message received is actually ACKSIG from player
+logger.debug("Received ACKSIG")
+### end setup phase
 
 # # get players
 # players = {}

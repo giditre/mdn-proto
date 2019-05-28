@@ -41,6 +41,7 @@ types = {
   11: "Setup Conductor Hello",
   12: "Setup Player Channel Suggestion",
   13: "Setup Conductor Signal Assignment",
+  14: "Setup Signal ACK from Player",
   20: "MAC Policy Change from Conductor",
   21: "MAC Policy Change ACK from Player",
   30: "Close from Conductor",
@@ -68,6 +69,7 @@ class MPSetupPlayerHello(Packet):
   name = "MPSetupPlayerHelloPacket"
   fields_desc = [
     ByteField("version", 0),
+    ByteField("session", 0),
     ByteEnumField("type", 10, types),
     FieldLenField("len", None, count_of="phy"),
     FieldListField("phy", 0, ByteEnumField("phy", 0, phys), count_from=lambda pkt:pkt.len)
@@ -76,7 +78,7 @@ class MPSetupPlayerHello(Packet):
   def post_build(self, p, pay):
     p += pay
     if self.len is None:
-        p = p[:2] + struct.pack("!H", len(p)) + p[4:]
+        p = p[:3] + struct.pack("!H", len(p)) + p[5:]
     return p
     
 
@@ -84,6 +86,7 @@ class MPSetupConductorHello(Packet):
   name = "MPSetupConductorHelloPacket"
   fields_desc = [
     ByteField("version", 0),
+    ByteField("session", 0),
     ByteEnumField("type", 11, types),
     ByteEnumField("phy", 0, phys)
   ]
@@ -93,6 +96,7 @@ class MPSetupPlayerChannel(Packet):
   name = "MPSetupPlayerChannelPacket"
   fields_desc = [
     ByteField("version", 0),
+    ByteField("session", 0),
     ByteEnumField("type", 12, types),
     ByteEnumField("phy", 0, phys),
     ByteField("channel", 0) 
@@ -103,6 +107,7 @@ class MPSetupConductorSignals(Packet):
   name = "MPSetupConductorSignalsPacket"
   fields_desc = [
     ByteField("version", 0),
+    ByteField("session", 0),
     ByteEnumField("type", 13, types),
     ShortField("len", None),
     ByteEnumField("phy", 0, phys),
@@ -114,14 +119,24 @@ class MPSetupConductorSignals(Packet):
   def post_build(self, p, pay):
     p += pay
     if self.len is None:
-        p = p[:2] + struct.pack("!H", len(p)) + p[4:]
+        p = p[:3] + struct.pack("!H", len(p)) + p[5:]
     return p
+
+
+class MPSetupPlayerSignalsACK(Packet):
+  name = "MPClosePlayer"
+  fields_desc = [
+    ByteField("version", 0),
+    ByteField("session", 0),
+    ByteEnumField("type", 14, types)
+  ]
 
 
 class MPCloseConductor(Packet):
   name = "MPCloseConductor"
   fields_desc = [
     ByteField("version", 0),
+    ByteField("session", 0),
     ByteEnumField("type", 30, types),
     ByteEnumField("phy", 0, phys),
     ByteField("channel", 0)
@@ -132,6 +147,7 @@ class MPClosePlayer(Packet):
   name = "MPClosePlayer"
   fields_desc = [
     ByteField("version", 0),
+    ByteField("session", 0),
     ByteEnumField("type", 31, types)
   ]
 
