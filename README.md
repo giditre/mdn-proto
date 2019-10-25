@@ -10,11 +10,15 @@ In order to handle vibrations, we could write another auxiliary library, similar
 
 player*.py and conductor*.py (* representing the version number) are the files with the PoC implementation of the behavior of the two MDN entities (conductor and player). Highest number means most recent version - just consider most recent version, the others are there only in case of need to rollback.
 Run the help function to understand which parameters are required. For example, to run the help function of conductor09.py, run:
+
 pyhton3 conductor09.py --help
 
 Examples of invocation of conductor and player:
+
 python3 conductor09.py --cond-ip 172.27.27.109 --cond-port 30000
+
 python3 player09.py eth0 b1:55:50:eb:e2:96 p1 --cond-ip 172.27.27.109 --cond-port 30000 --play-ip 172.27.27.102
+
 where the conductor's interface has been previously assigned IP address 172.27.27.109, and the player's interface with MAC b1:55:50:eb:e2:96 has IP address 172.27.27.102. With this invocation, the conductor will listen on UDP port 30000 for messages from the player.
 
 In the folder 'topo' there are some bash scripts that create emulated network topologies by means of Linux network namespaces. Same principle as mininet, but invoking directly the command line functions to build and configure namespaces and virtual switches, thus resulting less user-friendly but more tunable to specific needs. Also, the bash scripts 'assign_ip_to_hosts' and 'forward_to_hosts' are used to configure IP addresses on the network namespaces and to forward traffic flowing through the virtual switches to the network namespaces, this way allowing the namespace to capture all the traffic going through its switch. See 'honeycomb7src7dst.png' for a graphical representation of the topology built by script 'topo_honeycomb_7src7dst.sh'.
