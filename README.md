@@ -11,13 +11,13 @@ In order to handle vibrations, we could write another auxiliary library, similar
 player*.py and conductor*.py (* representing the version number) are the files with the PoC implementation of the behavior of the two MDN entities (conductor and player). Highest number means most recent version - just consider most recent version, the others are there only in case of need to rollback.
 Run the help function to understand which parameters are required. For example, to run the help function of conductor09.py, run:
 
-pyhton3 conductor09.py --help
+  pyhton3 conductor09.py --help
 
 Examples of invocation of conductor and player:
 
-python3 conductor09.py --cond-ip 172.27.27.109 --cond-port 30000
+  python3 conductor09.py --cond-ip 172.27.27.109 --cond-port 30000
 
-python3 player09.py eth0 b1:55:50:eb:e2:96 p1 --cond-ip 172.27.27.109 --cond-port 30000 --play-ip 172.27.27.102
+  python3 player09.py eth0 b1:55:50:eb:e2:96 p1 --cond-ip 172.27.27.109 --cond-port 30000 --play-ip 172.27.27.102
 
 where the conductor's interface has been previously assigned IP address 172.27.27.109, and the player's interface with MAC b1:55:50:eb:e2:96 has IP address 172.27.27.102. With this invocation, the conductor will listen on UDP port 30000 for messages from the player.
 
@@ -46,11 +46,11 @@ which only loads basic OpenFlow 1.0 capabilities, which should be enough for bas
 
 --- say that you want h1 to act as conductor and h2 as player. In both terminals, navigate to the mdn-proto folder. Then on h1's terminal (it's very important *where* you run this command), type:
 
-python3 conductor09.py --cond-ip <IP address of h1 in mininet> --cond-port 30000
+  python3 conductor09.py --cond-ip (IP address of h1 in mininet) --cond-port 30000
 
 On h2's terminal, type:
 
-python3 player09.py <h2 eth interface name> <h2 eth interface mac address> <arbitrary player symbolic name> --cond-ip <IP address of h1 in mininet> --cond-port 30000 --play-ip <IP address of h2 in mininet>
+  python3 player09.py h2 eth interface name) (h2 eth interface mac address) (arbitrary player symbolic name) --cond-ip (IP address of h1 in mininet) --cond-port 30000 --play-ip (IP address of h2 in mininet)
   
 #-#-#
   
@@ -78,7 +78,7 @@ sudo ip netns
 
 and this should yield a list of active network namespaces, in this case you should find Host-00 and Host-01. If so, you can now input commands on each of those host by typing:
 
-sudo ip netns exec <host name> <command>
+sudo ip netns exec (host name) (command)
 
 for example, to gather the list of interfaces of the first host, you can run:
 
@@ -88,7 +88,7 @@ and you should see two interfaces, namely the loopback interface "lo" and anothe
 
 --- in the same terminal where you just listed the namespaces, you can now assign IP addresses to the interfaces of the hosts. This is what my scripts "assign_IP" are for, but I reckon that some parts are case-specific, and you don't need to over-complicate things here anyway, so I suggest that here you assign IP addresses manually to the two hosts, with:
 
-sudo ip netns exec <host name> ifconfig <interface name> <IP address with netmask length>
+sudo ip netns exec (host name) ifconfig (interface name) (IP address with netmask length)
 
 so for example
 
@@ -96,11 +96,11 @@ sudo ip netns exec Host-00 ifconfig c.sw00-host00.1 10.0.0.1/24
 
 --- now you should be able to test the conductor and player. Say Host-00 is the conductor and Host-01 is the player. I suggest to open two terminals. I mean regular terminals on the machine you are working on. navigate to the mdn-proto folder. In one of the terminals run the conductor with:
 
-python3 conductor09.py --cond-ip <IP address of Host-00> --cond-port 30000
+python3 conductor09.py --cond-ip (IP address of Host-00) --cond-port 30000
 
 and in the other terminal run the player with:
 
-python3 player09.py <Host-01 eth interface name> <Host-01 eth interface mac address> <arbitrary player symbolic name> --cond-ip <IP address of Host-00> --cond-port 30000 --play-ip <IP address of Host-01>
+python3 player09.py (Host-01 eth interface name) (Host-01 eth interface mac address) (arbitrary player symbolic name) --cond-ip (IP address of Host-00) --cond-port 30000 --play-ip (IP address of Host-01)
   
 #-#-#
 
@@ -110,6 +110,8 @@ How to avoid using a SDN controller
 sudo ovs-vsctl show
 
 --- set the specific switch to act as standalone with:
-sudo ovs-vsctl set-fail-mode <switch-name> standalone
+sudo ovs-vsctl set-fail-mode (switch-name) standalone
   
 and now the switch should be able to forward packets without needing a SDN controller
+
+'''
