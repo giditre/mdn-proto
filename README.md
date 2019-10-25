@@ -113,5 +113,3 @@ sudo ovs-vsctl show
 sudo ovs-vsctl set-fail-mode (switch-name) standalone
   
 and now the switch should be able to forward packets without needing a SDN controller
-
-'''
