@@ -24,7 +24,7 @@ where the conductor's interface has been previously assigned IP address 172.27.2
 In the folder 'topo' there are some bash scripts that create emulated network topologies by means of Linux network namespaces. Same principle as mininet, but invoking directly the command line functions to build and configure namespaces and virtual switches, thus resulting less user-friendly but more tunable to specific needs. Also, the bash scripts 'assign_ip_to_hosts' and 'forward_to_hosts' are used to configure IP addresses on the network namespaces and to forward traffic flowing through the virtual switches to the network namespaces, this way allowing the namespace to capture all the traffic going through its switch. See 'honeycomb7src7dst.png' for a graphical representation of the topology built by script 'topo_honeycomb_7src7dst.sh'.
 HOWEVER, for the PoC development of the protocol, we do not necessarily need to deploy an emulated network, as this part on network emulation requires a pretty solid understanding of network namespaces and scripting applied to them. For basic tests on the protocol, one can just bring up (even manually) a pair of namespaces, assign IP to them, and run the 'conductor' on one and the 'player' on the other. Extension to multiple conductors and players can be considered a following step.
 
-###
+#-#-#
 
 How to run conductor and player on a mininet emulated network
 
@@ -52,7 +52,7 @@ On h2's terminal, type:
 
 python3 player09.py <h2 eth interface name> <h2 eth interface mac address> <arbitrary player symbolic name> --cond-ip <IP address of h1 in mininet> --cond-port 30000 --play-ip <IP address of h2 in mininet>
   
-###
+#-#-#
   
 How to run conductor and player on an emulated network built with the scripts in the "topo" folder
   
@@ -102,7 +102,7 @@ and in the other terminal run the player with:
 
 python3 player09.py <Host-01 eth interface name> <Host-01 eth interface mac address> <arbitrary player symbolic name> --cond-ip <IP address of Host-00> --cond-port 30000 --play-ip <IP address of Host-01>
   
-###
+#-#-#
 
 How to avoid using a SDN controller
 
