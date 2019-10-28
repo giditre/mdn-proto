@@ -96,11 +96,11 @@ sudo ip netns exec Host-00 ifconfig c.sw00-host00.1 10.0.0.1/24
 
 --- now you should be able to test the conductor and player. Say Host-00 is the conductor and Host-01 is the player. I suggest to open two terminals. I mean regular terminals on the machine you are working on. navigate to the mdn-proto folder. In one of the terminals run the conductor with:
 
-python3 conductor09.py --cond-ip (IP address of Host-00) --cond-port 30000
+sudo ip netns exec Host-00 python3 conductor09.py --cond-ip (IP address of Host-00) --cond-port 30000
 
 and in the other terminal run the player with:
 
-python3 player09.py (Host-01 eth interface name) (Host-01 eth interface mac address) (arbitrary player symbolic name) --cond-ip (IP address of Host-00) --cond-port 30000 --play-ip (IP address of Host-01)
+sudo ip netns exec Host-01 python3 player09.py (Host-01 eth interface name) (Host-01 eth interface mac address) (arbitrary player symbolic name) --cond-ip (IP address of Host-00) --cond-port 30000 --play-ip (IP address of Host-01)
   
 #-#-#
 
